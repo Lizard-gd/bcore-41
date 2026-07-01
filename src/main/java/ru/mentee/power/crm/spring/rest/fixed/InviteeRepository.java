@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
-@ConditionalOnProperty(name = "invitee.enabled", havingValue = "true")
 @Repository
 public interface InviteeRepository extends JpaRepository<Invitee, UUID> {
   boolean existsByEmail(String email);

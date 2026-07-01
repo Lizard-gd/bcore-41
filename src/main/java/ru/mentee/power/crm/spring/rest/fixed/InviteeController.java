@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.UUID;
 
-@ConditionalOnProperty(name = "invitee.enabled", havingValue = "true")
 @RestController
 @RequestMapping("/api/invitees")
 public class InviteeController {

@@ -11,7 +11,6 @@ import ru.mentee.power.crm.spring.exception.InvalidStatusException;
 
 import java.util.UUID;
 
-@ConditionalOnProperty(name = "invitee.enabled", havingValue = "true")
 @Service
 @RequiredArgsConstructor
 public class InviteeService {
