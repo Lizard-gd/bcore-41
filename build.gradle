@@ -1,0 +1,262 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'checkstyle'
+    id 'jacoco'
+    id 'gg.jte.gradle' version '3.2.3'
+    id 'org.springframework.boot' version '4.0.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '8.4.0'
+    id 'org.openapi.generator' version '7.20.0'
+}
+
+group = 'ru.mentee.power'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    junitVersion = '5.11.0'
+    assertjVersion = '3.27.7'
+    lombokVersion = '1.18.44'
+
+    servletVersion = '6.1.0'
+    tomcatVersion = '11.0.20'
+
+    jteVersion = '3.2.3'
+
+    springBootVersion = '4.0.2'
+
+    mapstructVersion = '1.6.3'
+    lombokMapstructBindingVersion = '0.2.0'
+
+    openApiGeneratorVersion = '7.20.0'
+    springdocVersion = '3.0.3'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.1.1"
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Lombok (для демонстрации)
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+
+    implementation "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
+
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+    // Mockito для тестов
+    testImplementation 'org.mockito:mockito-core:5.23.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.23.0'
+
+    implementation "jakarta.servlet:jakarta.servlet-api:${servletVersion}"
+    implementation "org.apache.tomcat.embed:tomcat-embed-core:${tomcatVersion}"
+
+    implementation "gg.jte:jte:${jteVersion}"
+    implementation "gg.jte:jte-runtime:${jteVersion}"
+
+    // Sprint 5: Spring Boot Stack (BCORE-14)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // JTE интеграция для Spring Boot
+    implementation "gg.jte:jte-spring-boot-starter-3:${jteVersion}"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+
+    //Для Bean Validation аннотаций
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // JPA + Hibernate
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    // PostgreSQL driver
+    runtimeOnly 'org.postgresql:postgresql'
+    // H2 для тестов
+    testRuntimeOnly 'com.h2database:h2:2.4.240'
+
+    testImplementation 'org.assertj:assertj-core:3.27.7'
+
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
+
+    // WireMock для интеграционных тестов внешних API
+    testImplementation 'org.wiremock:wiremock-standalone:3.12.1'
+
+    implementation 'org.springframework.data:spring-data-jpa'
+
+    // Spring Cloud OpenFeign
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    // Resilience4j (retry, circuit breaker)
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3'
+    implementation 'io.github.resilience4j:resilience4j-feign'
+
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.9'
+
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+}
+
+checkstyle {
+    toolVersion = '10.12.4'  // актуальная версия на 2025 год для Gradle 9.1
+    maxErrors = 0      // даже 1 ошибка (severity=error) → BUILD FAILED
+    maxWarnings = 999  // предупреждения (severity=warning) не блокируют сборку
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml") // опционально, custom config
+}
+
+tasks.withType(Checkstyle).configureEach {
+    group = 'verification'
+    exclude '**/build/generated/**'
+}
+
+checkstyleMain {
+    source = fileTree(dir: "${project.projectDir}/src/main/java", excludes: ['**/generated/**', '**/build/**'])
+}
+
+checkstyleTest {
+    source = fileTree(dir: "${project.projectDir}/src/test/java", excludes: ['**/generated/**', '**/build/**'])
+}
+
+// Настройка JaCoCo
+jacoco {
+    toolVersion = '0.8.14'  // актуальная версия на 2025 год с поддержкой Java 25
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport  // генерировать отчёт после тестов
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+    maxHeapSize = "1G"
+    systemProperty "junit.jupiter.execution.parallel.enabled", "false"
+}
+
+// Настройка JaCoCo отчёта
+jacocoTestReport {
+    dependsOn test  // отчёт генерируется после выполнения тестов
+    reports {
+        xml.required = false
+        csv.required = false
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/test/html')
+    }
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, exclude: ['**/generated/**', '**/dto/generated/**', '**/rest/generated/**'])
+    }))
+}
+
+// Настройка проверки покрытия (минимум 80%)
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80  // 80% покрытия инструкций
+            }
+        }
+    }
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, exclude: ['**/generated/**', '**/dto/generated/**', '**/rest/generated/**'])
+    }))
+}
+
+// Интеграция проверок в lifecycle
+check {
+    dependsOn jacocoTestCoverageVerification
+}
+
+application {
+    mainClass = 'ru.mentee.power.crm.Main'
+}
+
+// Запуск Servlet стека (Main.java) на порту 8080
+tasks.register('runServlet', JavaExec) {
+    group = 'application'
+    description = 'Run Servlet stack (Main.java) on port 8080'
+    mainClass = 'ru.mentee.power.crm.Main'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+// Запуск Spring стека (Application.java) на порту 8081
+tasks.register('runSpring', JavaExec) {
+    group = 'application'
+    description = 'Run Spring stack (Application.java) on port 8081'
+    mainClass = 'ru.mentee.power.crm.Application'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'server.port', '8081'
+    systemProperty 'spring.profiles.active', 'dev'
+}
+
+jte {
+    sourceDirectory = file("src/main/resources/jte").toPath()
+    contentType = gg.jte.ContentType.Html
+    binaryStaticContent = false
+}
+
+springBoot {
+    mainClass = 'ru.mentee.power.crm.spring.Application'
+}
+
+spotless {
+    java {
+        target 'src/main/java/**/*.java', 'src/test/java/**/*.java'
+
+        targetExclude 'build/**', 'src/main/generated/**'
+
+        googleJavaFormat('1.35.0')
+
+        removeUnusedImports()
+
+        trimTrailingWhitespace()
+
+        endWithNewline()
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += [
+            '-Amapstruct.defaultComponentModel=spring',
+            '-Amapstruct.unmappedTargetPolicy=ERROR'
+    ]
+}
+
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "${rootProject.projectDir}/src/main/resources/api/api-spec.yaml"
+    outputDir = "${buildDir}/generated"
+    apiPackage = "ru.mentee.power.crm.spring.rest.generated"
+    modelPackage = "ru.mentee.power.crm.spring.dto.generated"
+    configOptions = [
+            interfaceOnly: "true",
+            useTags: "true",
+            dateLibrary: "java8",
+            useSpringBoot3: "true",
+            documentationProvider: "none"
+    ]
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir}/generated/src/main/java"
+        }
+    }
+}
+
+compileJava.dependsOn tasks.openApiGenerate
