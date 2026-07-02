@@ -1,31 +1,31 @@
 package ru.mentee.power.crm.spring.rest.fixed;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.mentee.power.crm.spring.exception.EntityNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import ru.mentee.power.crm.spring.exception.EmailAlreadyExistsException;
-import ru.mentee.power.crm.spring.exception.InvalidStatusException;
+import ru.mentee.power.crm.spring.exception.EntityNotFoundException;
 
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class InviteeService {
 
   private final InviteeRepository repository;
   private final InviteeMapper mapper;
 
-  public Page<InviteeResponse> getAll(Pageable pageable) {
+  public Page<InviteeResponse> getAll(int page, int size) {
+    Pageable pageable = PageRequest.of(page, size);
     return repository.findAll(pageable).map(mapper::toResponse);
   }
 
   public InviteeResponse getById(UUID id) {
-    Invitee invitee =
-        repository
-            .findById(id)
+    Invitee invitee = repository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Invitee not found with id: " + id));
     return mapper.toResponse(invitee);
   }
@@ -34,32 +34,21 @@ public class InviteeService {
     if (repository.existsByEmail(request.getEmail())) {
       throw new EmailAlreadyExistsException("Email already exists: " + request.getEmail());
     }
-
     Invitee invitee = mapper.toEntity(request);
-    invitee.setStatus("NEW");
-
     Invitee saved = repository.save(invitee);
     return mapper.toResponse(saved);
   }
 
   public void delete(UUID id) {
-    if (!repository.existsById(id)) {
-      throw new EntityNotFoundException("Invitee not found with id: " + id);
-    }
-    repository.deleteById(id);
+    Invitee invitee = repository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Invitee not found with id: " + id));
+    repository.delete(invitee);
   }
 
-  public InviteeResponse updateStatus(UUID id, String status) {
-    Invitee invitee =
-        repository
-            .findById(id)
+  public InviteeResponse updateStatus(UUID id, InviteeStatus newStatus) {
+    Invitee invitee = repository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Invitee not found with id: " + id));
-
-    if (!status.equals("ACTIVE") && !status.equals("INACTIVE")) {
-      throw new InvalidStatusException("Invalid status: " + status);
-    }
-
-    invitee.setStatus(status);
+    invitee.setStatus(newStatus);
     Invitee updated = repository.save(invitee);
     return mapper.toResponse(updated);
   }

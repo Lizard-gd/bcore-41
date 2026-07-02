@@ -4,4 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record InviteeResponse(
-    UUID id, String email, String firstName, String status, Instant createdAt) {}
+        UUID id,
+        String email,
+        String firstName,
+        InviteeStatus status,
+        Instant createdAt,
+        Instant updatedAt
+) {}
