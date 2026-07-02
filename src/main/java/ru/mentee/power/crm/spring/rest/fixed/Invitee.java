@@ -1,31 +1,60 @@
 package ru.mentee.power.crm.spring.rest.fixed;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import lombok.Data;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Data
+@Table(name = "invitees")
+@Getter
+@Setter
 @NoArgsConstructor
 public class Invitee {
-  @Id private UUID id;
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  private UUID id;
+
+  @Column(nullable = false, unique = true, length = 255)
   private String email;
+
+  @Column(nullable = false, length = 100)
   private String firstName;
-  private String status;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private InviteeStatus status;
+
+  @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
+  @Column(name = "updated_at")
+  private Instant updatedAt;
+
   @PrePersist
-  public void prePersist() {
-    if (id == null) {
-      id = UUID.randomUUID();
+  protected void onCreate() {
+    createdAt = Instant.now();
+    updatedAt = Instant.now();
+    if (status == null) {
+      status = InviteeStatus.NEW;
     }
-    if (createdAt == null) {
-      createdAt = Instant.now();
-    }
+  }
+
+  @PreUpdate
+  protected void onUpdate() {
+    updatedAt = Instant.now();
   }
 }
