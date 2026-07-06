@@ -2,19 +2,21 @@ package ru.mentee.power.crm.spring.rest.fixed;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -22,6 +24,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Invitee {
 
   @Id
@@ -38,23 +41,11 @@ public class Invitee {
   @Column(nullable = false, length = 20)
   private InviteeStatus status;
 
+  @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
-  private Instant createdAt;
+  private LocalDateTime createdAt;
 
+  @LastModifiedDate
   @Column(name = "updated_at")
-  private Instant updatedAt;
-
-  @PrePersist
-  protected void onCreate() {
-    createdAt = Instant.now();
-    updatedAt = Instant.now();
-    if (status == null) {
-      status = InviteeStatus.NEW;
-    }
-  }
-
-  @PreUpdate
-  protected void onUpdate() {
-    updatedAt = Instant.now();
-  }
+  private LocalDateTime updatedAt;
 }

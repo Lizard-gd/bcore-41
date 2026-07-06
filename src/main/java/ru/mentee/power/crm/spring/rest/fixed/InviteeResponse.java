@@ -1,6 +1,6 @@
 package ru.mentee.power.crm.spring.rest.fixed;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record InviteeResponse(
@@ -8,6 +8,6 @@ public record InviteeResponse(
         String email,
         String firstName,
         InviteeStatus status,
-        Instant createdAt,
-        Instant updatedAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {}
